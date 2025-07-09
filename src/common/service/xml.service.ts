@@ -23,7 +23,6 @@ export class XMLService {
       for (const a of q.answers) {
         const ans = qNode.ele('answer', { fraction: a.correct ? '100' : '0' });
         ans.ele('text').dat(a.text);
-        ans.ele('feedback', { format: 'html' }).ele('text').dat('');
       }
     }
 
