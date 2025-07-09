@@ -7,10 +7,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('Moodle Converter')
-    .setDescription(
-      'This is Stockgrid Zincomed API to store products information and manage Wordpress',
-    )
+    .setTitle('Question Converter')
+    .setDescription('This is Questions converter to generate XML based on HTML')
     .setVersion('1.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
