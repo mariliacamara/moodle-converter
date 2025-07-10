@@ -65,27 +65,35 @@
       margin-bottom: 1rem;
     }
 
-    .file-input-wrapper label {
-      margin-bottom: 0;
-    }
-
     .remove-btn {
       background-color: #e74c3c;
       padding: 0.4rem 0.8rem;
       font-size: 0.9rem;
       border-radius: 4px;
-      margin: 0;
     }
 
     .remove-btn:hover {
       background-color: #c0392b;
+    }
+
+    ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    li {
+      background: #fff;
+      margin-bottom: 0.5rem;
+      padding: 0.8rem;
+      border-left: 4px solid #2c3e50;
+      border-radius: 4px;
     }
   </style>
 </head>
 <body>
 
   <div class="section">
-    <h2><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h2>
+    <h1><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h1>
     <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data">
       <div id="fileInputs">
         <div class="file-input-wrapper">
@@ -101,23 +109,25 @@
   </div>
 
   <div class="section">
-    <h2><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h2>
-    <form action="/questions/compare-html-xml" method="POST" enctype="multipart/form-data">
+    <h1><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h1>
+    <form id="compareForm">
       <label>
         Arquivo HTML da Prova:
-        <input type="file" name="files" accept=".html" required />
+        <input type="file" name="htmlFile" accept=".html" required />
       </label>
       <label>
         Arquivo XML do Banco:
-        <input type="file" name="files" accept=".xml" required />
+        <input type="file" name="xmlFile" accept=".xml" required />
       </label>
       <button type="submit">Comparar e Listar Questões</button>
     </form>
+
+    <div id="result" style="margin-top: 2rem;"></div>
   </div>
 
   <script>
+    // Upload múltiplos arquivos com adicionar/remover
     let fileCount = 1;
-
     function addFileInput() {
       fileCount++;
       const container = document.getElementById('fileInputs');
@@ -131,13 +141,64 @@
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
       removeBtn.className = 'remove-btn';
-      removeBtn.innerText = 'Remover';
+      removeBtn.innerText = '❌ Remover';
       removeBtn.onclick = () => container.removeChild(wrapper);
 
       wrapper.appendChild(label);
       wrapper.appendChild(removeBtn);
       container.appendChild(wrapper);
     }
+
+    // Envio do formulário de comparação via fetch
+    document.getElementById('compareForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const htmlFile = form.htmlFile.files[0];
+      const xmlFile = form.xmlFile.files[0];
+      const resultDiv = document.getElementById('result');
+
+      if (!htmlFile || !xmlFile) {
+        resultDiv.innerHTML = "<p style='color:red;'>Selecione os dois arquivos.</p>";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('files', htmlFile);
+      formData.append('files', xmlFile);
+
+      resultDiv.innerHTML = '<p>⏳ Comparando questões...</p>';
+
+      try {
+        const response = await fetch('/questions/compare-html-xml', {
+          method: 'POST',
+          body: formData
+        });
+
+        const data = await response.json();
+
+        const questions = data.questions || data;
+
+        if (!Array.isArray(questions)) {
+          resultDiv.innerHTML = `<p style="color:red;">Erro ao processar resposta.</p>`;
+          return;
+        }
+
+        if (!questions.length) {
+          resultDiv.innerHTML = `<p style="color:orange;">Nenhuma questão encontrada.</p>`;
+          return;
+        }
+
+        resultDiv.innerHTML = `
+          <h2>✅ ${questions.length} questões encontradas</h2>
+          <ul>
+            ${questions.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          </ul>
+        `;
+      } catch (err) {
+        resultDiv.innerHTML = `<p style="color:red;">Erro ao enviar arquivos: ${err.message}</p>`;
+      }
+    });
   </script>
 
 </body>
