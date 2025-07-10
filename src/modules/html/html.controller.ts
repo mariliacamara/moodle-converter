@@ -8,6 +8,6 @@ export class HtmlController {
   @Public()
   @Get()
   getHome(@Res() res: Response) {
-    res.sendFile(join(__dirname, '../../../static/index.html'));
+    res.sendFile(join(process.cwd(), 'static/index.html'));
   }
 }
