@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conversor e Comparador de Questões</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      background-color: #f7f7f7;
+    }
+
+    h1 {
+      color: #2c3e50;
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    form {
+      background: white;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 1rem;
+      font-weight: bold;
+    }
+
+    input[type="file"] {
+      margin-top: 0.5rem;
+    }
+
+    button {
+      background-color: #2c3e50;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background-color: #34495e;
+    }
+
+    .section {
+      margin-bottom: 3rem;
+    }
+
+    .icon {
+      font-size: 1.4rem;
+      margin-right: 0.3rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="section">
+    <h1><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h1>
+    <form action="/questions/upload-multiple" method="POST" enctype="multipart/form-data">
+      <label>
+        Selecione arquivos PDF ou HTML:
+        <input type="file" name="files" accept=".pdf,.html" multiple required />
+      </label>
+      <button type="submit">Gerar XML</button>
+    </form>
+  </div>
+
+  <div class="section">
+    <h1><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h1>
+    <form action="/questions/compare-html-xml" method="POST" enctype="multipart/form-data">
+      <label>
+        Arquivo HTML da Prova:
+        <input type="file" name="files" accept=".html" required />
+      </label>
+      <label>
+        Arquivo XML do Banco:
+        <input type="file" name="files" accept=".xml" required />
+      </label>
+      <button type="submit">Comparar e Listar Questões</button>
+    </form>
+  </div>
+
+</body>
+</html>

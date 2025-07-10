@@ -66,4 +66,28 @@ export class QuestionsService {
     const xml = this.xmlService.generateXML(allQuestions);
     return Buffer.from(xml);
   }
+
+  async compareHtmlWithXml(htmlFile: Buffer, xmlFile: Buffer): Promise<any[]> {
+    const html = htmlFile.toString('utf-8');
+    const xmlText = xmlFile.toString('utf-8');
+
+    const htmlQuestions = this.parserService.parseQuestionsFromHTML(html);
+    const xmlQuestionsRaw =
+      await this.parserService.parseQuestionsFromXML(xmlText);
+    const xmlQuestions =
+      this.parserService.removeDuplicateQuestions(xmlQuestionsRaw);
+
+    const matched = this.parserService.compareHtmlAndXml(
+      htmlQuestions,
+      xmlQuestions,
+    );
+
+    console.log(`${htmlQuestions.length} perguntas encontradas em avaliação`);
+    console.log(
+      `${xmlQuestions.length} perguntas encontradas no banco de dados`,
+    );
+    console.log(`${matched.length} questões de avaliação no banco`);
+
+    return matched.map(({ title, statement }) => ({ title, statement }));
+  }
 }

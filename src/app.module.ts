@@ -3,6 +3,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { BullModule } from '@nestjs/bullmq';
 import { QuestionsModule } from './modules/questions/questions.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { HtmlController } from './modules/html/html.controller';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     }),
     QuestionsModule,
   ],
-  controllers: [],
+  controllers: [HtmlController],
   providers: [
     {
       provide: APP_GUARD,

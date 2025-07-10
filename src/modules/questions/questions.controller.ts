@@ -74,4 +74,47 @@ export class QuestionsController {
     });
     res.send(xmlBuffer);
   }
+
+  @Public()
+  @Post('compare-html-xml')
+  @UseInterceptors(FilesInterceptor('files'))
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+        },
+      },
+      required: ['files'],
+    },
+  })
+  async compareHtmlWithXml(
+    @UploadedFiles() files: Express.Multer.File[],
+    @Res() res: Response,
+  ) {
+    const htmlFile = files.find((f) => f.mimetype.includes('html'));
+    const xmlFile = files.find((f) => f.mimetype.includes('xml'));
+
+    if (!htmlFile || !xmlFile) {
+      return res
+        .status(400)
+        .json({ error: 'Envie um arquivo HTML e um XML para comparar.' });
+    }
+
+    const questions = await this.questionsService.compareHtmlWithXml(
+      htmlFile.buffer,
+      xmlFile.buffer,
+    );
+
+    return res.json({
+      total: questions.length,
+      questions,
+    });
+  }
 }

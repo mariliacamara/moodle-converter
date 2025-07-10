@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import * as cheerio from 'cheerio';
+import { parseStringPromise } from 'xml2js';
 
 interface Answer {
   text: string;
@@ -59,6 +60,34 @@ export class ParserService {
     return questions;
   }
 
+  async parseQuestionsFromXML(xml: string): Promise<Question[]> {
+    const parsed = await parseStringPromise(xml);
+    const questions: Question[] = [];
+
+    for (const q of parsed.quiz.question || []) {
+      const statement = q.questiontext?.[0]?.text?.[0]?.trim();
+      const answers: Answer[] = [];
+
+      for (const a of q.answer || []) {
+        const text = a.text?.[0]?.trim() || '';
+        const correct = a.$?.fraction === '100';
+        if (text) {
+          answers.push({ text, correct });
+        }
+      }
+
+      if (statement && answers.length >= 2) {
+        questions.push({
+          title: q.name?.[0]?.text?.[0] || 'Questão sem título',
+          statement,
+          answers,
+        });
+      }
+    }
+
+    return questions;
+  }
+
   parseQuestionsFromHTML(html: string, startIndex = 1): Question[] {
     const $ = cheerio.load(html);
     const questions: Question[] = [];
@@ -98,5 +127,109 @@ export class ParserService {
     });
 
     return questions;
+  }
+
+  extractQuestions(html: string) {
+    const $ = cheerio.load(html);
+    const questions: any[] = [];
+
+    $('.question-text .ql-editor').each((_, el) => {
+      const question = $(el).text().trim();
+      const $container = $(el).closest('.base-question');
+
+      const choices: string[] = [];
+      let correctAnswer: string | null = null;
+
+      $container.find('li.multiple-answer_dnd-item').each((_, li) => {
+        const alt = $(li).find('.bb-editor-wrapper').text().trim();
+        const correct = $(li).find('.multiple-answer-li__correct').length > 0;
+
+        choices.push(alt);
+        if (correct) correctAnswer = alt;
+      });
+
+      questions.push({
+        question,
+        choices,
+        correctAnswer,
+      });
+    });
+
+    return questions;
+  }
+
+  compareHtmlAndXml(
+    htmlQuestions: Question[],
+    xmlQuestions: Question[],
+  ): Question[] {
+    const normalize = (text: string) =>
+      text
+        .toLowerCase()
+        .normalize('NFD') // remove acentos
+        .replace(/[\u0300-\u036f]/g, '') // caracteres acentuados
+        // eslint-disable-next-line no-useless-escape
+        .replace(/[.,;:!?()\[\]{}"']/g, '') // remove pontuação
+        .replace(/\s+/g, ' ') // espaços múltiplos
+        .trim();
+
+    const seen = new Set<string>();
+    const result: Question[] = [];
+
+    for (const xmlQ of xmlQuestions) {
+      const xmlStatement = normalize(xmlQ.statement);
+      const xmlCorrect = normalize(
+        xmlQ.answers.find((a) => a.correct)?.text || '',
+      );
+      const key = `${xmlStatement}::${xmlCorrect}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const matchInHtml = htmlQuestions.some((htmlQ) => {
+        const htmlStatement = normalize(htmlQ.statement);
+        const htmlCorrect = normalize(
+          htmlQ.answers.find((a) => a.correct)?.text || '',
+        );
+
+        return (
+          (htmlStatement.includes(xmlStatement) ||
+            xmlStatement.includes(htmlStatement)) &&
+          htmlCorrect === xmlCorrect
+        );
+      });
+
+      if (matchInHtml) result.push(xmlQ);
+    }
+
+    return result;
+  }
+
+  removeDuplicateQuestions(questions: Question[]): Question[] {
+    const normalize = (text: string) =>
+      text
+        .toLowerCase()
+        .normalize('NFD') // remove acentos
+        .replace(/[\u0300-\u036f]/g, '') // caracteres acentuados
+        // eslint-disable-next-line no-useless-escape
+        .replace(/[.,;:!?()\[\]{}"']/g, '') // remove pontuação
+        .replace(/\s+/g, ' ') // espaços múltiplos
+        .trim();
+
+    const seen = new Set<string>();
+    const uniqueQuestions: Question[] = [];
+
+    for (const q of questions) {
+      const statement = normalize(q.statement);
+      const correctAnswer = normalize(
+        q.answers.find((a) => a.correct)?.text || '',
+      );
+      const key = `${statement}::${correctAnswer}`;
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        uniqueQuestions.push(q);
+      }
+    }
+
+    return uniqueQuestions;
   }
 }
