@@ -88,6 +88,11 @@
       border-left: 4px solid #2c3e50;
       border-radius: 4px;
     }
+
+    .not-found li {
+      border-left-color: #e74c3c;
+      background-color: #fff5f5;
+    }
   </style>
 </head>
 <body>
@@ -126,8 +131,8 @@
   </div>
 
   <script>
-    // Upload múltiplos arquivos com adicionar/remover
     let fileCount = 1;
+
     function addFileInput() {
       fileCount++;
       const container = document.getElementById('fileInputs');
@@ -149,7 +154,6 @@
       container.appendChild(wrapper);
     }
 
-    // Envio do formulário de comparação via fetch
     document.getElementById('compareForm').addEventListener('submit', async function (e) {
       e.preventDefault();
 
@@ -177,22 +181,18 @@
 
         const data = await response.json();
 
-        const questions = data.questions || data;
-
-        if (!Array.isArray(questions)) {
-          resultDiv.innerHTML = `<p style="color:red;">Erro ao processar resposta.</p>`;
-          return;
-        }
-
-        if (!questions.length) {
-          resultDiv.innerHTML = `<p style="color:orange;">Nenhuma questão encontrada.</p>`;
-          return;
-        }
+        const encontradas = data.questions || [];
+        const naoEncontradas = data.notFoundQuestions || [];
 
         resultDiv.innerHTML = `
-          <h2>✅ ${questions.length} questões encontradas</h2>
+          <h2>✅ ${data.total} questão(ões) encontradas</h2>
           <ul>
-            ${questions.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+            ${encontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          </ul>
+
+          <h2 style="color:darkred">❌ ${data.totalNotFound} não encontrada(s) no banco</h2>
+          <ul class="not-found">
+            ${naoEncontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
           </ul>
         `;
       } catch (err) {

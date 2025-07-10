@@ -67,7 +67,7 @@ export class QuestionsService {
     return Buffer.from(xml);
   }
 
-  async compareHtmlWithXml(htmlFile: Buffer, xmlFile: Buffer): Promise<any[]> {
+  async compareHtmlWithXml(htmlFile: Buffer, xmlFile: Buffer): Promise<any> {
     const html = htmlFile.toString('utf-8');
     const xmlText = xmlFile.toString('utf-8');
 
@@ -77,17 +77,27 @@ export class QuestionsService {
     const xmlQuestions =
       this.parserService.removeDuplicateQuestions(xmlQuestionsRaw);
 
-    const matched = this.parserService.compareHtmlAndXml(
-      htmlQuestions,
-      xmlQuestions,
-    );
+    const matched: typeof htmlQuestions = [];
+    const notFound: typeof htmlQuestions = [];
 
-    console.log(`${htmlQuestions.length} perguntas encontradas em avaliação`);
-    console.log(
-      `${xmlQuestions.length} perguntas encontradas no banco de dados`,
-    );
-    console.log(`${matched.length} questões de avaliação no banco`);
+    for (const htmlQ of htmlQuestions) {
+      const normalizedHTML = this.parserService.normalize(htmlQ.statement);
 
-    return matched.map(({ title, statement }) => ({ title, statement }));
+      const found = xmlQuestions.find(
+        (xmlQ) =>
+          this.parserService.normalize(xmlQ.statement) === normalizedHTML,
+      );
+
+      if (found) {
+        matched.push(found); // ✅ usa o do XML
+      } else {
+        notFound.push(htmlQ); // ❌ usa o do HTML
+      }
+    }
+
+    return {
+      matched,
+      notFound,
+    };
   }
 }

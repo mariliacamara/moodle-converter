@@ -162,22 +162,12 @@ export class ParserService {
     htmlQuestions: Question[],
     xmlQuestions: Question[],
   ): Question[] {
-    const normalize = (text: string) =>
-      text
-        .toLowerCase()
-        .normalize('NFD') // remove acentos
-        .replace(/[\u0300-\u036f]/g, '') // caracteres acentuados
-        // eslint-disable-next-line no-useless-escape
-        .replace(/[.,;:!?()\[\]{}"']/g, '') // remove pontuação
-        .replace(/\s+/g, ' ') // espaços múltiplos
-        .trim();
-
     const seen = new Set<string>();
     const result: Question[] = [];
 
     for (const xmlQ of xmlQuestions) {
-      const xmlStatement = normalize(xmlQ.statement);
-      const xmlCorrect = normalize(
+      const xmlStatement = this.normalize(xmlQ.statement);
+      const xmlCorrect = this.normalize(
         xmlQ.answers.find((a) => a.correct)?.text || '',
       );
       const key = `${xmlStatement}::${xmlCorrect}`;
@@ -185,8 +175,8 @@ export class ParserService {
       seen.add(key);
 
       const matchInHtml = htmlQuestions.some((htmlQ) => {
-        const htmlStatement = normalize(htmlQ.statement);
-        const htmlCorrect = normalize(
+        const htmlStatement = this.normalize(htmlQ.statement);
+        const htmlCorrect = this.normalize(
           htmlQ.answers.find((a) => a.correct)?.text || '',
         );
 
@@ -204,22 +194,12 @@ export class ParserService {
   }
 
   removeDuplicateQuestions(questions: Question[]): Question[] {
-    const normalize = (text: string) =>
-      text
-        .toLowerCase()
-        .normalize('NFD') // remove acentos
-        .replace(/[\u0300-\u036f]/g, '') // caracteres acentuados
-        // eslint-disable-next-line no-useless-escape
-        .replace(/[.,;:!?()\[\]{}"']/g, '') // remove pontuação
-        .replace(/\s+/g, ' ') // espaços múltiplos
-        .trim();
-
     const seen = new Set<string>();
     const uniqueQuestions: Question[] = [];
 
     for (const q of questions) {
-      const statement = normalize(q.statement);
-      const correctAnswer = normalize(
+      const statement = this.normalize(q.statement);
+      const correctAnswer = this.normalize(
         q.answers.find((a) => a.correct)?.text || '',
       );
       const key = `${statement}::${correctAnswer}`;
@@ -231,5 +211,16 @@ export class ParserService {
     }
 
     return uniqueQuestions;
+  }
+
+  normalize(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD') // remove acentos
+      .replace(/[\u0300-\u036f]/g, '') // remove diacríticos
+      .replace(/[\s\n\r]+/g, ' ') // normaliza espaços e quebras
+      .replace(/[-–—]/g, '-') // normaliza hífens
+      .replace(/[^\w\s-]/g, '') // remove pontuação (opcional)
+      .trim();
   }
 }
