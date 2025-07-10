@@ -11,6 +11,7 @@ import { QuestionsService } from './questions.service';
 import { Response } from 'express';
 import { ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
+import { orderBy } from 'lodash';
 
 @Controller('questions')
 @ApiTags('Questions')
@@ -97,13 +98,23 @@ export class QuestionsController {
         xmlFile.buffer,
       );
 
+    const orderedQuestions = orderBy(
+      matched.map(({ title, statement }) => ({
+        title,
+        statement,
+        questionNumber: parseInt(title.match(/\d+/)?.[0], 10) || 0,
+      })),
+      ['questionNumber'],
+      ['asc'],
+    ).map(({ title, statement }) => ({
+      title,
+      statement,
+    }));
+
     return res.json({
       total: matched.length,
       totalNotFound: notFound.length,
-      questions: matched.map(({ title, statement }) => ({
-        title,
-        statement,
-      })),
+      questions: orderedQuestions,
       notFoundQuestions: notFound.map(({ title, statement }) => ({
         title,
         statement,

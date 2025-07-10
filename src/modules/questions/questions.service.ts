@@ -83,9 +83,13 @@ export class QuestionsService {
     for (const htmlQ of htmlQuestions) {
       const normalizedHTML = this.parserService.normalize(htmlQ.statement);
 
+      const getCorrectAlternative = (q: any) =>
+        q.answers.find((a: any) => a.correct)?.text?.trim();
+
       const found = xmlQuestions.find(
         (xmlQ) =>
-          this.parserService.normalize(xmlQ.statement) === normalizedHTML,
+          this.parserService.normalize(xmlQ.statement) === normalizedHTML &&
+          getCorrectAlternative(xmlQ) === getCorrectAlternative(htmlQ),
       );
 
       if (found) {
