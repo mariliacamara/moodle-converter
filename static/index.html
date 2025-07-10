@@ -31,7 +31,7 @@
     }
 
     input[type="file"] {
-      margin-top: 0.5rem;
+      margin-top: 0.3rem;
     }
 
     button {
@@ -57,23 +57,51 @@
       font-size: 1.4rem;
       margin-right: 0.3rem;
     }
+
+    .file-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .file-input-wrapper label {
+      margin-bottom: 0;
+    }
+
+    .remove-btn {
+      background-color: #e74c3c;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
+      border-radius: 4px;
+      margin: 0;
+    }
+
+    .remove-btn:hover {
+      background-color: #c0392b;
+    }
   </style>
 </head>
 <body>
 
   <div class="section">
-    <h1><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h1>
-    <form action="/questions/upload-multiple" method="POST" enctype="multipart/form-data">
-      <label>
-        Selecione arquivos PDF ou HTML:
-        <input type="file" name="files" accept=".pdf,.html" multiple required />
-      </label>
+    <h2><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h2>
+    <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data">
+      <div id="fileInputs">
+        <div class="file-input-wrapper">
+          <label>Arquivo 1:
+            <input type="file" name="files" accept=".pdf,.html" required />
+          </label>
+        </div>
+      </div>
+      <button type="button" onclick="addFileInput()">+ Adicionar mais arquivos</button>
+      <br /><br />
       <button type="submit">Gerar XML</button>
     </form>
   </div>
 
   <div class="section">
-    <h1><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h1>
+    <h2><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h2>
     <form action="/questions/compare-html-xml" method="POST" enctype="multipart/form-data">
       <label>
         Arquivo HTML da Prova:
@@ -86,6 +114,31 @@
       <button type="submit">Comparar e Listar Questões</button>
     </form>
   </div>
+
+  <script>
+    let fileCount = 1;
+
+    function addFileInput() {
+      fileCount++;
+      const container = document.getElementById('fileInputs');
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'file-input-wrapper';
+
+      const label = document.createElement('label');
+      label.innerHTML = `Arquivo ${fileCount}: <input type="file" name="files" accept=".pdf,.html" required />`;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-btn';
+      removeBtn.innerText = 'Remover';
+      removeBtn.onclick = () => container.removeChild(wrapper);
+
+      wrapper.appendChild(label);
+      wrapper.appendChild(removeBtn);
+      container.appendChild(wrapper);
+    }
+  </script>
 
 </body>
 </html>
