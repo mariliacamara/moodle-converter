@@ -93,6 +93,11 @@
       border-left-color: #e74c3c;
       background-color: #fff5f5;
     }
+
+    .duplicated li {
+      border-left-color: #f39c12;
+      background-color: #fffaf0;
+    }
   </style>
 </head>
 <body>
@@ -183,16 +188,22 @@
 
         const encontradas = data.questions || [];
         const naoEncontradas = data.notFoundQuestions || [];
+        const duplicadas = data.duplicatedQuestions || [];
 
         resultDiv.innerHTML = `
-          <h2>✅ ${data.total} questão(ões) encontradas</h2>
+          <h2>✅ ${encontradas.length} questão(ões) encontradas</h2>
           <ul>
             ${encontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
           </ul>
 
-          <h2 style="color:darkred">❌ ${data.totalNotFound} não encontrada(s) no banco</h2>
+          <h2 style="color:darkred">❌ ${naoEncontradas.length} não encontrada(s) no banco</h2>
           <ul class="not-found">
             ${naoEncontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          </ul>
+
+          <h2 style="color:#f39c12">⚠️ ${duplicadas.length} duplicada(s)</h2>
+          <ul class="duplicated">
+            ${duplicadas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
           </ul>
         `;
       } catch (err) {

@@ -79,28 +79,61 @@ export class QuestionsService {
 
     const matched: typeof htmlQuestions = [];
     const notFound: typeof htmlQuestions = [];
+    const duplicated: typeof htmlQuestions = [];
+
+    const matchedKeys = new Set<string>();
+
+    const getNormalizedCorrectAlternative = (q: any): string =>
+      this.parserService.normalize(
+        q.answers.find((a: any) => a.correct)?.text || '',
+      );
 
     for (const htmlQ of htmlQuestions) {
       const normalizedHTML = this.parserService.normalize(htmlQ.statement);
+      const htmlCorrect = getNormalizedCorrectAlternative(htmlQ);
 
-      const getCorrectAlternative = (q: any) =>
-        q.answers.find((a: any) => a.correct)?.text?.trim();
+      let found: any = null;
 
-      const found = xmlQuestions.find(
-        (xmlQ) =>
-          this.parserService.normalize(xmlQ.statement) === normalizedHTML &&
-          getCorrectAlternative(xmlQ) === getCorrectAlternative(htmlQ),
-      );
+      for (const xmlQ of xmlQuestions) {
+        const normXml = this.parserService.normalize(xmlQ.statement);
+        const xmlCorrect = getNormalizedCorrectAlternative(xmlQ);
+
+        if (normXml === normalizedHTML && xmlCorrect === htmlCorrect) {
+          found = xmlQ;
+          break;
+        }
+
+        if (normXml === normalizedHTML && xmlCorrect !== htmlCorrect) {
+          console.log(
+            '⚠️ Mesmo enunciado mas alternativas diferentes:',
+            htmlQ.title,
+          );
+          console.log('HTML alt:', htmlCorrect);
+          console.log('XML  alt:', xmlCorrect);
+        } else if (normXml !== normalizedHTML && xmlCorrect === htmlCorrect) {
+          console.log(
+            '⚠️ Alternativa igual mas enunciado diferente:',
+            htmlQ.title,
+          );
+        }
+      }
 
       if (found) {
-        matched.push(found); // ✅ usa o do XML
+        const key = `${normalizedHTML}::${htmlCorrect}`;
+        if (matchedKeys.has(key)) {
+          duplicated.push(htmlQ);
+        } else {
+          matched.push(found);
+          matchedKeys.add(key);
+        }
       } else {
-        notFound.push(htmlQ); // ❌ usa o do HTML
+        notFound.push(htmlQ);
       }
     }
 
     return {
       matched,
+      duplicated,
       notFound,
     };
   }

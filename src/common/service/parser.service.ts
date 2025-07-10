@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 import { Injectable } from '@nestjs/common';
 import * as cheerio from 'cheerio';
 import { parseStringPromise } from 'xml2js';
@@ -216,11 +217,13 @@ export class ParserService {
   normalize(text: string): string {
     return text
       .toLowerCase()
-      .normalize('NFD') // remove acentos
-      .replace(/[\u0300-\u036f]/g, '') // remove diacríticos
-      .replace(/[\s\n\r]+/g, ' ') // normaliza espaços e quebras
+      .normalize('NFD') // separa acentos
+      .replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/[\u200B-\u200D\uFEFF\u00a0]/g, '') // remove espaços invisíveis
+      .replace(/[\s\n\r]+/g, ' ') // normaliza espaços
       .replace(/[-–—]/g, '-') // normaliza hífens
-      .replace(/[^\w\s-]/g, '') // remove pontuação (opcional)
+      .replace(/[“”"(){}\[\];.,!?]+$/g, '') // remove pontuação final
+      .replace(/[:“”"(){}\[\];.,!?]/g, '') // remove pontuação geral
       .trim();
   }
 }

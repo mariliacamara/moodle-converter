@@ -92,7 +92,7 @@ export class QuestionsController {
         .json({ error: 'Envie um HTML e um XML para comparar.' });
     }
 
-    const { matched, notFound } =
+    const { matched, notFound, duplicated } =
       await this.questionsService.compareHtmlWithXml(
         htmlFile.buffer,
         xmlFile.buffer,
@@ -119,6 +119,7 @@ export class QuestionsController {
         title,
         statement,
       })),
+      duplicatedQuestions: duplicated,
     });
   }
 }
