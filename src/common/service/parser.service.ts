@@ -8,11 +8,18 @@ interface Answer {
   correct: boolean;
 }
 
-interface Question {
-  title: string;
-  statement: string;
-  answers: Answer[];
-}
+type Question =
+  | {
+      type: 'essay';
+      title: string;
+      statement: string;
+    }
+  | {
+      type: 'multichoice';
+      title: string;
+      statement: string;
+      answers: Answer[];
+    };
 
 @Injectable()
 export class ParserService {
@@ -28,13 +35,12 @@ export class ParserService {
         .replace(/\s*Comentários automatizados.*/gi, '')
         .trim();
 
-      // Separar enunciado e alternativas
       const match = raw.match(/^(.*?)(?=\n?[A-D](?:\s|\n|Resposta))/);
       if (!match) continue;
+
       const statement = match[1].trim();
       const alternativesText = raw.substring(match[0].length).trim();
 
-      // Extrair alternativas
       const answerRegex =
         /([A-D])\s*(Resposta correta)?\s*([\s\S]*?)(?=(?:\n?[A-D]\s|$))/g;
       const answers: Answer[] = [];
@@ -52,6 +58,7 @@ export class ParserService {
       if (answers.length < 2) continue;
 
       questions.push({
+        type: 'multichoice',
         title: `Questão ${startIndex + questions.length}`,
         statement,
         answers,
@@ -67,8 +74,8 @@ export class ParserService {
 
     for (const q of parsed.quiz.question || []) {
       const statement = q.questiontext?.[0]?.text?.[0]?.trim();
-      const answers: Answer[] = [];
 
+      const answers: Answer[] = [];
       for (const a of q.answer || []) {
         const text = a.text?.[0]?.trim() || '';
         const correct = a.$?.fraction === '100';
@@ -77,8 +84,17 @@ export class ParserService {
         }
       }
 
-      if (statement && answers.length >= 2) {
+      if (!statement) continue;
+
+      if (answers.length < 2) {
         questions.push({
+          type: 'essay',
+          title: q.name?.[0]?.text?.[0] || 'Questão sem título',
+          statement,
+        });
+      } else {
+        questions.push({
+          type: 'multichoice',
           title: q.name?.[0]?.text?.[0] || 'Questão sem título',
           statement,
           answers,
@@ -95,36 +111,43 @@ export class ParserService {
 
     $('.question-container').each((index, element) => {
       const qIndex = startIndex + index;
-      const statement = $(element)
-        .find('.question-text .ql-editor')
-        .text()
-        .trim();
+      const $el = $(element);
+
+      const statement = $el.find('.question-text .ql-editor').text().trim();
+
+      const isEssay = $el.find('.essay').length > 0;
+      if (isEssay) {
+        questions.push({
+          type: 'essay',
+          title: `Questão ${qIndex}`,
+          statement,
+        });
+        return;
+      }
 
       const answers: Answer[] = [];
 
-      $(element)
-        .find('.multiple-answer__dnd-item')
-        .each((_, alt) => {
-          const text = $(alt).find('.ql-editor.bb-editor').text().trim();
+      $el.find('.multiple-answer__dnd-item').each((_, alt) => {
+        const text = $(alt).find('.ql-editor.bb-editor').text().trim();
+        const correct = $(alt)
+          .find('.answer-feedback-container span')
+          .text()
+          .toLowerCase()
+          .includes('resposta correta');
 
-          const correct = $(alt)
-            .find('.answer-feedback-container span')
-            .text()
-            .toLowerCase()
-            .includes('resposta correta');
+        if (text) {
+          answers.push({ text, correct });
+        }
+      });
 
-          if (text) {
-            answers.push({ text, correct });
-          }
-        });
+      if (answers.length < 2) return;
 
-      if (statement && answers.length >= 2) {
-        questions.push({
-          title: `Questão ${qIndex}`,
-          statement,
-          answers,
-        });
-      }
+      questions.push({
+        type: 'multichoice',
+        title: `Questão ${qIndex}`,
+        statement,
+        answers,
+      });
     });
 
     return questions;
@@ -167,6 +190,8 @@ export class ParserService {
     const result: Question[] = [];
 
     for (const xmlQ of xmlQuestions) {
+      if (xmlQ.type !== 'multichoice') continue;
+
       const xmlStatement = this.normalize(xmlQ.statement);
       const xmlCorrect = this.normalize(
         xmlQ.answers.find((a) => a.correct)?.text || '',
@@ -176,6 +201,7 @@ export class ParserService {
       seen.add(key);
 
       const matchInHtml = htmlQuestions.some((htmlQ) => {
+        if (htmlQ.type !== 'multichoice') return false;
         const htmlStatement = this.normalize(htmlQ.statement);
         const htmlCorrect = this.normalize(
           htmlQ.answers.find((a) => a.correct)?.text || '',
@@ -200,9 +226,10 @@ export class ParserService {
 
     for (const q of questions) {
       const statement = this.normalize(q.statement);
-      const correctAnswer = this.normalize(
-        q.answers.find((a) => a.correct)?.text || '',
-      );
+      const correctAnswer =
+        q.type === 'multichoice'
+          ? this.normalize(q.answers.find((a) => a.correct)?.text || '')
+          : '';
       const key = `${statement}::${correctAnswer}`;
 
       if (!seen.has(key)) {
@@ -217,13 +244,13 @@ export class ParserService {
   normalize(text: string): string {
     return text
       .toLowerCase()
-      .normalize('NFD') // separa acentos
-      .replace(/[\u0300-\u036f]/g, '') // remove acentos
-      .replace(/[\u200B-\u200D\uFEFF\u00a0]/g, '') // remove espaços invisíveis
-      .replace(/[\s\n\r]+/g, ' ') // normaliza espaços
-      .replace(/[-–—]/g, '-') // normaliza hífens
-      .replace(/[“”"(){}\[\];.,!?]+$/g, '') // remove pontuação final
-      .replace(/[:“”"(){}\[\];.,!?]/g, '') // remove pontuação geral
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u200B-\u200D\uFEFF\u00a0]/g, '')
+      .replace(/[\s\n\r]+/g, ' ')
+      .replace(/[-–—]/g, '-')
+      .replace(/[“”"(){}\[\];.,!?]+$/g, '')
+      .replace(/[:“”"(){}\[\];.,!?]/g, '')
       .trim();
   }
 }
