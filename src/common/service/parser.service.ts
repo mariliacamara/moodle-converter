@@ -19,6 +19,7 @@ type Question =
       title: string;
       statement: string;
       answers: Answer[];
+      isVF?: boolean;
     };
 
 @Injectable()
@@ -116,6 +117,7 @@ export class ParserService {
       const statement = $el.find('.question-text .ql-editor').text().trim();
 
       const isEssay = $el.find('.essay').length > 0;
+
       if (isEssay) {
         questions.push({
           type: 'essay',
@@ -126,6 +128,42 @@ export class ParserService {
       }
 
       const answers: Answer[] = [];
+
+      const isTrueFalse = $(element).find('.true-false__list').length > 0;
+
+      if (isTrueFalse) {
+        const rawStatement = $(element)
+          .find('.question-text .ql-editor')
+          .text()
+          .trim();
+        const answers: Answer[] = [];
+
+        $(element)
+          .find('.true-false__list li')
+          .each((_, li) => {
+            const $li = $(li);
+            const text = $li.find('.true-false__text').text().trim();
+            const correct = $li.find('.true-false__correct').length > 0;
+
+            console.log(text);
+            console.log(correct);
+
+            if (text) {
+              answers.push({ text, correct });
+            }
+          });
+
+        if (answers.length === 2) {
+          questions.push({
+            type: 'multichoice',
+            title: `Questão ${qIndex}`,
+            statement: rawStatement,
+            answers,
+            isVF: true,
+          });
+          return;
+        }
+      }
 
       $el.find('.multiple-answer__dnd-item').each((_, alt) => {
         const text = $(alt).find('.ql-editor.bb-editor').text().trim();
