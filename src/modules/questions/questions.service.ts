@@ -3,9 +3,12 @@ import { PDFService } from '../../common/service/pdf.service';
 import { ParserService } from '../../common/service/parser.service';
 import { XMLService } from '../../common/service/xml.service';
 import * as mime from 'mime-types';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class QuestionsService {
+  private readonly logger = new Logger(QuestionsService.name);
+
   constructor(
     private readonly pdfService: PDFService,
     private readonly parserService: ParserService,
@@ -24,25 +27,25 @@ export class QuestionsService {
     const allQuestions: any[] = [];
     let count = 1;
 
-    console.log(`📝 Processando ${files.length} arquivo(s)...`);
+    this.logger.log(`📝 Processando ${files.length} arquivo(s)...`);
 
     for (const file of files) {
       const mimeType = mime.lookup(file.originalname);
-      console.log(`➡️ Arquivo: ${file.originalname} (${mimeType})`);
+      this.logger.log(`➡️ Arquivo: ${file.originalname} (${mimeType})`);
 
       let questions: any[] = [];
 
       try {
         if (mimeType === 'application/pdf') {
-          console.log('📄 Extraindo texto de PDF...');
+          this.logger.log('📄 Extraindo texto de PDF...');
           const text = await this.pdfService.extractText(file.buffer);
           questions = this.parserService.parseQuestions(text, count);
         } else if (mimeType === 'text/html') {
-          console.log('🌐 Extraindo questões do HTML...');
+          this.logger.log('🌐 Extraindo questões do HTML...');
           const html = file.buffer.toString('utf-8');
           questions = this.parserService.parseQuestionsFromHTML(html, count);
         } else {
-          console.warn(`⚠️ Tipo de arquivo não suportado: ${mimeType}`);
+          this.logger.warn(`⚠️ Tipo de arquivo não suportado: ${mimeType}`);
           continue;
         }
       } catch (err) {
@@ -53,7 +56,7 @@ export class QuestionsService {
         continue;
       }
 
-      console.log(
+      this.logger.log(
         `✅ ${questions.length} questão(ões) extraída(s) de ${file.originalname}`,
       );
 
@@ -61,7 +64,7 @@ export class QuestionsService {
       allQuestions.push(...questions);
     }
 
-    console.log(`📦 Total de questões combinadas: ${allQuestions.length}`);
+    this.logger.log(`📦 Total de questões combinadas: ${allQuestions.length}`);
 
     const xml = this.xmlService.generateXML(allQuestions);
     return Buffer.from(xml);
@@ -104,14 +107,12 @@ export class QuestionsService {
         }
 
         if (normXml === normalizedHTML && xmlCorrect !== htmlCorrect) {
-          console.log(
+          this.logger.log(
             '⚠️ Mesmo enunciado mas alternativas diferentes:',
             htmlQ.title,
           );
-          console.log('HTML alt:', htmlCorrect);
-          console.log('XML  alt:', xmlCorrect);
         } else if (normXml !== normalizedHTML && xmlCorrect === htmlCorrect) {
-          console.log(
+          this.logger.log(
             '⚠️ Alternativa igual mas enunciado diferente:',
             htmlQ.title,
           );

@@ -145,9 +145,6 @@ export class ParserService {
             const text = $li.find('.true-false__text').text().trim();
             const correct = $li.find('.true-false__correct').length > 0;
 
-            console.log(text);
-            console.log(correct);
-
             if (text) {
               answers.push({ text, correct });
             }
