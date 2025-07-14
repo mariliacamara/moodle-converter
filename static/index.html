@@ -17,6 +17,13 @@
       }
     }
   </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+  window.addEventListener('DOMContentLoaded', () => {
+    lucide.createIcons();
+  });
+</script>
 </head>
 <body class="bg-gray-100 font-sans p-8">
 
@@ -24,47 +31,86 @@
     <!-- Gerar XML -->
     <div class="mb-12">
       <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-        📄 <span class="pl-4">Gerar XML com múltiplos arquivos</span>
+        <i data-lucide="file-text" class="w-5 h-5 text-primary"></i>
+        <span class="pl-2">Gerar XML com múltiplos arquivos</span>
       </h2>
 
       <p class="mb-4">Selecione um arquivo HTML para gerar suas questões em XML:</p>
 
       <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data"
         class="bg-white shadow-md rounded-lg p-6 space-y-4">
-        <div id="fileInputs" class="flex flex-col gap-6">
-          <div class="flex items-center gap-4">
+        
+        <div id="fileInputs" class="flex flex-col gap-6 transition-all duration-300">
+          <div class="flex items-center gap-4" data-index="1">
             <label class="block font-semibold">Arquivo 1:</label>
-            <div class="relative">
-              <label
-                class="bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700"
-                for="fileInput1"
-              >Selecionar</label>
-              <input type="file" name="files" id="fileInput1" accept=".html"
-                class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" required
-                onchange="updateFileName(this)" />
+            <div class="relative flex flex-row gap-2">
+              <div class="relative">
+                <label
+                  class="bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700 transition"
+                  for="fileInput1"
+                >Selecionar</label>
+                <input
+                  type="file"
+                  name="files"
+                  id="fileInput1"
+                  accept=".html"
+                  class="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  required
+                  onchange="updateFileName(this)"
+                />
+              </div>
+              <span class="text-sm text-gray-800 font-medium truncate max-w-[200px]" id="fileName1">
+                Nenhum arquivo selecionado
+              </span>
             </div>
-            <span class="text-sm text-gray-600" id="fileName1">Nenhum arquivo selecionado</span>
           </div>
         </div>
 
-        <div style="margin-top: 2rem;" class="flex flex-row gap-4">
-          <button type="submit" class="bg-primary text-white px-6 py-2 rounded hover:bg-gray-700">
+        <div style="margin-top: 4rem;" class="w-full flex flex-col flex justify-between sm:flex-row gap-4 mt-4">
+          <div class="flex gap-2">
+            <div class="relative group">
+              <button 
+                type="button" 
+                class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600 transition"
+                onclick="addFileInput()"
+              >
+                <i data-lucide="plus-circle" class="w-5 h-5"></i>
+              </button>
+              <div
+                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10"
+              >
+                Adicionar mais arquivos
+              </div>
+            </div>
+
+            <div class="relative group">
+              <button 
+                type="button" 
+                class="bg-danger text-white px-6 py-2 rounded hover:bg-red-700 transition"
+                onclick="clearAllFileInputs()"
+              >
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+              </button>
+              <div
+                class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10"
+              >
+                Limpar tudo
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="bg-primary text-white px-6 py-2 rounded hover:bg-gray-700 transition">
             Gerar XML
-          </button>
-          <button type="button" class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600" onclick="addFileInput()">      
-            + Adicionar mais arquivos
-          </button>
-          <button type="button" class="bg-danger text-white px-6 py-2 rounded hover:bg-red-700" onclick="clearAllFileInputs()">
-            🗑️ Limpar tudo
           </button>
         </div>
       </form>
     </div>
 
+
     <!-- Comparar Questões -->
     <div class="mb-12">
       <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2">
-        🔍 <span class="pl-4">Comparar Questões da Prova (HTML) com Banco (Arquivo XML)</span>
+        <i data-lucide="search" class="w-5 h-5 text-primary"></i> 
+        <span class="pl-2">Comparar Questões da Prova (HTML) com Banco (Arquivo XML)</span>
       </h2>
 
       <form id="compareForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
@@ -92,12 +138,23 @@
   <script>
     let fileCount = 1;
 
+    function updateFileName(input) {
+      const id = input.id.replace('fileInput', '');
+      const span = document.getElementById('fileName' + id);
+      if (input.files.length > 0) {
+        span.textContent = input.files[0].name;
+      } else {
+        span.textContent = 'Nenhum arquivo selecionado';
+      }
+    }
+
     function addFileInput() {
       fileCount++;
       const container = document.getElementById('fileInputs');
 
       const wrapper = document.createElement('div');
-      wrapper.className = 'flex items-center gap-4';
+      wrapper.className = 'flex items-center gap-4 transition-all duration-300';
+      wrapper.setAttribute('data-index', fileCount);
 
       const label = document.createElement('label');
       label.className = 'block font-semibold';
@@ -107,7 +164,7 @@
       inputWrapper.className = 'relative';
 
       const labelBtn = document.createElement('label');
-      labelBtn.className = 'bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700';
+      labelBtn.className = 'bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700 transition';
       labelBtn.setAttribute('for', `fileInput${fileCount}`);
       labelBtn.innerText = 'Selecionar';
 
@@ -121,13 +178,13 @@
       input.setAttribute('onchange', 'updateFileName(this)');
 
       const fileNameSpan = document.createElement('span');
-      fileNameSpan.className = 'text-sm text-gray-600';
+      fileNameSpan.className = 'text-sm text-gray-800 font-medium truncate max-w-[200px]';
       fileNameSpan.id = `fileName${fileCount}`;
       fileNameSpan.textContent = 'Nenhum arquivo selecionado';
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'bg-danger text-white px-3 py-1 rounded text-sm hover:bg-red-700';
+      removeBtn.className = 'bg-danger text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition';
       removeBtn.innerText = 'Remover';
       removeBtn.onclick = () => container.removeChild(wrapper);
 
@@ -140,16 +197,27 @@
       wrapper.appendChild(removeBtn);
 
       container.appendChild(wrapper);
+
+      // Scroll suave até o novo input
+      wrapper.scrollIntoView({ behavior: 'smooth' });
     }
 
-    function updateFileName(input) {
-      const id = input.id.replace('fileInput', '');
-      const span = document.getElementById('fileName' + id);
-      if (input.files.length > 0) {
-        span.textContent = input.files[0].name;
-      } else {
-        span.textContent = 'Nenhum arquivo selecionado';
+    function clearAllFileInputs() {
+      const container = document.getElementById('fileInputs');
+
+      // Remove todos menos o primeiro
+      while (container.children.length > 1) {
+        container.removeChild(container.lastChild);
       }
+
+      // Resetar o primeiro input
+      const firstInput = document.getElementById('fileInput1');
+      const firstSpan = document.getElementById('fileName1');
+      if (firstInput) firstInput.value = '';
+      if (firstSpan) firstSpan.textContent = 'Nenhum arquivo selecionado';
+
+      // Resetar contador
+      fileCount = 1;
     }
 
     document.getElementById('compareForm').addEventListener('submit', async function (e) {
