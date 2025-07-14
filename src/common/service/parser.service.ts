@@ -116,7 +116,6 @@ export class ParserService {
       const statement =
         $el.find('.question-text .ql-editor').html()?.trim() || '';
 
-      console.log(1, statement);
       const isEssay = $el.find('.essay').length > 0;
 
       if (isEssay) {

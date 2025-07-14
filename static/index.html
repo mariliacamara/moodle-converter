@@ -3,136 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <title>Conversor e Comparador de Questões</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 2rem;
-      background-color: #f7f7f7;
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#2c3e50',
+            danger: '#e74c3c',
+            warning: '#f39c12',
+          }
+        }
+      }
     }
-
-    h1 {
-      color: #2c3e50;
-      font-size: 1.8rem;
-      margin-bottom: 0.5rem;
-    }
-
-    form {
-      background: white;
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    }
-
-    label {
-      display: block;
-      margin-bottom: 1rem;
-      font-weight: bold;
-    }
-
-    input[type="file"] {
-      margin-top: 0.3rem;
-    }
-
-    button {
-      background-color: #2c3e50;
-      color: white;
-      border: none;
-      padding: 0.6rem 1.2rem;
-      font-size: 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-top: 1rem;
-    }
-
-    button:hover {
-      background-color: #34495e;
-    }
-
-    .section {
-      margin-bottom: 3rem;
-    }
-
-    .icon {
-      font-size: 1.4rem;
-      margin-right: 0.3rem;
-    }
-
-    .file-input-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .remove-btn {
-      background-color: #e74c3c;
-      padding: 0.4rem 0.8rem;
-      font-size: 0.9rem;
-      border-radius: 4px;
-    }
-
-    .remove-btn:hover {
-      background-color: #c0392b;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    li {
-      background: #fff;
-      margin-bottom: 0.5rem;
-      padding: 0.8rem;
-      border-left: 4px solid #2c3e50;
-      border-radius: 4px;
-    }
-
-    .not-found li {
-      border-left-color: #e74c3c;
-      background-color: #fff5f5;
-    }
-
-    .duplicated li {
-      border-left-color: #f39c12;
-      background-color: #fffaf0;
-    }
-  </style>
+  </script>
 </head>
-<body>
+<body class="bg-gray-100 font-sans p-8">
 
-  <div class="section">
-    <h2><span class="icon">📄</span>Gerar XML com múltiplos arquivos</h2>
-    <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data">
-      <div id="fileInputs">
-        <div class="file-input-wrapper">
-          <label>Arquivo 1:
-            <input type="file" name="files" accept=".pdf,.html" required />
-          </label>
+  <div class="max-w-4xl mx-auto">
+    <!-- Gerar XML -->
+    <div class="mb-12">
+      <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+        📄 <span class="pl-4">Gerar XML com múltiplos arquivos</span>
+      </h2>
+
+      <p class="mb-4">Selecione um arquivo HTML para gerar suas questões em XML:</p>
+
+      <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data"
+        class="bg-white shadow-md rounded-lg p-6 space-y-4">
+        <div id="fileInputs" class="flex flex-col gap-6">
+          <div class="flex items-center gap-4">
+            <label class="block font-semibold">Arquivo 1:</label>
+            <div class="relative">
+              <label
+                class="bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700"
+                for="fileInput1"
+              >Selecionar</label>
+              <input type="file" name="files" id="fileInput1" accept=".html"
+                class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" required
+                onchange="updateFileName(this)" />
+            </div>
+            <span class="text-sm text-gray-600" id="fileName1">Nenhum arquivo selecionado</span>
+          </div>
         </div>
-      </div>
-      <button type="button" onclick="addFileInput()">+ Adicionar mais arquivos</button>
-      <br /><br />
-      <button type="submit">Gerar XML</button>
-    </form>
-  </div>
 
-  <div class="section">
-    <h2><span class="icon">🔍</span>Comparar Questões da Prova com Banco (XML)</h2>
-    <form id="compareForm">
-      <label>
-        Arquivo HTML da Prova:
-        <input type="file" name="htmlFile" accept=".html" required />
-      </label>
-      <label>
-        Arquivo XML do Banco:
-        <input type="file" name="xmlFile" accept=".xml" required />
-      </label>
-      <button type="submit">Comparar e Listar Questões</button>
-    </form>
+        <div style="margin-top: 2rem;" class="flex flex-row gap-4">
+          <button type="submit" class="bg-primary text-white px-6 py-2 rounded hover:bg-gray-700">
+            Gerar XML
+          </button>
+          <button type="button" class="bg-yellow-500 text-white px-6 py-2 rounded hover:bg-yellow-600" onclick="addFileInput()">      
+            + Adicionar mais arquivos
+          </button>
+          <button type="button" class="bg-danger text-white px-6 py-2 rounded hover:bg-red-700" onclick="clearAllFileInputs()">
+            🗑️ Limpar tudo
+          </button>
+        </div>
+      </form>
+    </div>
 
-    <div id="result" style="margin-top: 2rem;"></div>
+    <!-- Comparar Questões -->
+    <div class="mb-12">
+      <h2 class="text-xl font-bold text-primary mb-4 flex items-center gap-2">
+        🔍 <span class="pl-4">Comparar Questões da Prova (HTML) com Banco (Arquivo XML)</span>
+      </h2>
+
+      <form id="compareForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
+        <div>
+          <label class="block font-semibold mb-1">Arquivo HTML da Prova:</label>
+          <input type="file" name="htmlFile" accept=".html" required
+            class="block w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-gray-700" />
+        </div>
+
+        <div>
+          <label class="block font-semibold mb-1">Arquivo XML do Banco:</label>
+          <input type="file" name="xmlFile" accept=".xml" required
+            class="block w-full file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-gray-700" />
+        </div>
+
+        <button type="submit" style="margin-top: 2rem;" class="bg-primary text-white px-6 py-2 rounded hover:bg-gray-700">
+          Comparar e Listar Questões
+        </button>
+      </form>
+
+      <div id="result" class="mt-8"></div>
+    </div>
   </div>
 
   <script>
@@ -143,20 +97,59 @@
       const container = document.getElementById('fileInputs');
 
       const wrapper = document.createElement('div');
-      wrapper.className = 'file-input-wrapper';
+      wrapper.className = 'flex items-center gap-4';
 
       const label = document.createElement('label');
-      label.innerHTML = `Arquivo ${fileCount}: <input type="file" name="files" accept=".pdf,.html" required />`;
+      label.className = 'block font-semibold';
+      label.innerText = `Arquivo ${fileCount}:`;
+
+      const inputWrapper = document.createElement('div');
+      inputWrapper.className = 'relative';
+
+      const labelBtn = document.createElement('label');
+      labelBtn.className = 'bg-primary text-white px-3 py-1 rounded cursor-pointer hover:bg-gray-700';
+      labelBtn.setAttribute('for', `fileInput${fileCount}`);
+      labelBtn.innerText = 'Selecionar';
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.name = 'files';
+      input.id = `fileInput${fileCount}`;
+      input.accept = '.pdf,.html';
+      input.required = true;
+      input.className = 'absolute inset-0 opacity-0 cursor-pointer w-full h-full';
+      input.setAttribute('onchange', 'updateFileName(this)');
+
+      const fileNameSpan = document.createElement('span');
+      fileNameSpan.className = 'text-sm text-gray-600';
+      fileNameSpan.id = `fileName${fileCount}`;
+      fileNameSpan.textContent = 'Nenhum arquivo selecionado';
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'remove-btn';
-      removeBtn.innerText = '❌ Remover';
+      removeBtn.className = 'bg-danger text-white px-3 py-1 rounded text-sm hover:bg-red-700';
+      removeBtn.innerText = 'Remover';
       removeBtn.onclick = () => container.removeChild(wrapper);
 
+      inputWrapper.appendChild(labelBtn);
+      inputWrapper.appendChild(input);
+
       wrapper.appendChild(label);
+      wrapper.appendChild(inputWrapper);
+      wrapper.appendChild(fileNameSpan);
       wrapper.appendChild(removeBtn);
+
       container.appendChild(wrapper);
+    }
+
+    function updateFileName(input) {
+      const id = input.id.replace('fileInput', '');
+      const span = document.getElementById('fileName' + id);
+      if (input.files.length > 0) {
+        span.textContent = input.files[0].name;
+      } else {
+        span.textContent = 'Nenhum arquivo selecionado';
+      }
     }
 
     document.getElementById('compareForm').addEventListener('submit', async function (e) {
@@ -168,7 +161,7 @@
       const resultDiv = document.getElementById('result');
 
       if (!htmlFile || !xmlFile) {
-        resultDiv.innerHTML = "<p style='color:red;'>Selecione os dois arquivos.</p>";
+        resultDiv.innerHTML = "<p class='text-red-600'>Selecione os dois arquivos.</p>";
         return;
       }
 
@@ -191,26 +184,25 @@
         const duplicadas = data.duplicatedQuestions || [];
 
         resultDiv.innerHTML = `
-          <h2>✅ ${encontradas.length} questão(ões) encontradas</h2>
-          <ul>
-            ${encontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          <h2 class="text-green-700 font-bold mb-2">✅ ${encontradas.length} questão(ões) encontradas</h2>
+          <ul class="space-y-2">
+            ${encontradas.map(q => `<li class="bg-white border-l-4 border-primary p-3 rounded">${q.title}: ${q.statement}</li>`).join('')}
           </ul>
 
-          <h2 style="color:darkred">❌ ${naoEncontradas.length} não encontrada(s) no banco</h2>
-          <ul class="not-found">
-            ${naoEncontradas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          <h2 class="text-red-700 font-bold mt-6 mb-2">❌ ${naoEncontradas.length} não encontrada(s) no banco</h2>
+          <ul class="space-y-2">
+            ${naoEncontradas.map(q => `<li class="bg-red-50 border-l-4 border-danger p-3 rounded">${q.title}: ${q.statement}</li>`).join('')}
           </ul>
 
-          <h2 style="color:#f39c12">⚠️ ${duplicadas.length} duplicada(s)</h2>
-          <ul class="duplicated">
-            ${duplicadas.map(q => `<li><strong>${q.title}</strong>: ${q.statement}</li>`).join('')}
+          <h2 class="text-yellow-600 font-bold mt-6 mb-2">⚠️ ${duplicadas.length} duplicada(s)</h2>
+          <ul class="space-y-2">
+            ${duplicadas.map(q => `<li class="bg-yellow-50 border-l-4 border-warning p-3 rounded">${q.title}: ${q.statement}</li>`).join('')}
           </ul>
         `;
       } catch (err) {
-        resultDiv.innerHTML = `<p style="color:red;">Erro ao enviar arquivos: ${err.message}</p>`;
+        resultDiv.innerHTML = `<p class='text-red-600'>Erro ao enviar arquivos: ${err.message}</p>`;
       }
     });
   </script>
-
 </body>
 </html>
