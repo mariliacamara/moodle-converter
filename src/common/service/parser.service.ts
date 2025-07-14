@@ -1,6 +1,7 @@
 /* eslint-disable no-useless-escape */
 import { Injectable } from '@nestjs/common';
 import * as cheerio from 'cheerio';
+import { CheerioAPI } from 'cheerio';
 import { parseStringPromise } from 'xml2js';
 
 interface Answer {
@@ -106,57 +107,138 @@ export class ParserService {
     return questions;
   }
 
+  // parseQuestionsFromHTML(html: string, startIndex = 1): Question[] {
+  //   const $ = cheerio.load(html);
+  //   const questions: Question[] = [];
+
+  //   $('.question-container').each((index, element) => {
+  //     const qIndex = startIndex + index;
+  //     const $el = $(element);
+
+  //     const statement = $el.find('.question-text .ql-editor').text().trim();
+
+  //     const isEssay = $el.find('.essay').length > 0;
+
+  //     if (isEssay) {
+  //       questions.push({
+  //         type: 'essay',
+  //         title: `Questão ${qIndex}`,
+  //         statement,
+  //       });
+  //       return;
+  //     }
+
+  //     const answers: Answer[] = [];
+
+  //     const isTrueFalse = $(element).find('.true-false__list').length > 0;
+
+  //     if (isTrueFalse) {
+  //       const rawStatement = $(element)
+  //         .find('.question-text .ql-editor')
+  //         .text()
+  //         .trim();
+  //       const answers: Answer[] = [];
+
+  //       $(element)
+  //         .find('.true-false__list li')
+  //         .each((_, li) => {
+  //           const $li = $(li);
+  //           const text = $li.find('.true-false__text').text().trim();
+  //           const correct = $li.find('.true-false__correct').length > 0;
+
+  //           if (text) {
+  //             answers.push({ text, correct });
+  //           }
+  //         });
+
+  //       if (answers.length === 2) {
+  //         questions.push({
+  //           type: 'multichoice',
+  //           title: `Questão ${qIndex}`,
+  //           statement: rawStatement,
+  //           answers,
+  //           isVF: true,
+  //         });
+  //         return;
+  //       }
+  //     }
+
+  //     $el.find('.multiple-answer__dnd-item').each((_, alt) => {
+  //       const text = $(alt).find('.ql-editor.bb-editor').text().trim();
+  //       const correct = $(alt)
+  //         .find('.answer-feedback-container span')
+  //         .text()
+  //         .toLowerCase()
+  //         .includes('resposta correta');
+
+  //       if (text) {
+  //         answers.push({ text, correct });
+  //       }
+  //     });
+
+  //     if (answers.length < 2) return;
+
+  //     questions.push({
+  //       type: 'multichoice',
+  //       title: `Questão ${qIndex}`,
+  //       statement,
+  //       answers,
+  //     });
+  //   });
+
+  //   return questions;
+  // }
+
   parseQuestionsFromHTML(html: string, startIndex = 1): Question[] {
     const $ = cheerio.load(html);
-    const questions: Question[] = [];
+    const questions: (Question & { feedback?: string })[] = [];
 
     $('.question-container').each((index, element) => {
       const qIndex = startIndex + index;
       const $el = $(element);
 
       const statement = $el.find('.question-text .ql-editor').text().trim();
-
       const isEssay = $el.find('.essay').length > 0;
 
       if (isEssay) {
+        const feedback = this.extractFeedback($, element);
         questions.push({
           type: 'essay',
           title: `Questão ${qIndex}`,
           statement,
+          ...(feedback && { feedback }),
         });
         return;
       }
 
+      const isTrueFalse = $el.find('.true-false__list').length > 0;
       const answers: Answer[] = [];
 
-      const isTrueFalse = $(element).find('.true-false__list').length > 0;
-
       if (isTrueFalse) {
-        const rawStatement = $(element)
+        const rawStatement = $el
           .find('.question-text .ql-editor')
           .text()
           .trim();
-        const answers: Answer[] = [];
 
-        $(element)
-          .find('.true-false__list li')
-          .each((_, li) => {
-            const $li = $(li);
-            const text = $li.find('.true-false__text').text().trim();
-            const correct = $li.find('.true-false__correct').length > 0;
+        $el.find('.true-false__list li').each((_, li) => {
+          const $li = $(li);
+          const text = $li.find('.true-false__text').text().trim();
+          const correct = $li.find('.true-false__correct').length > 0;
 
-            if (text) {
-              answers.push({ text, correct });
-            }
-          });
+          if (text) {
+            answers.push({ text, correct });
+          }
+        });
 
         if (answers.length === 2) {
+          const feedback = this.extractFeedback($, element);
           questions.push({
             type: 'multichoice',
             title: `Questão ${qIndex}`,
             statement: rawStatement,
             answers,
             isVF: true,
+            ...(feedback && { feedback }),
           });
           return;
         }
@@ -177,11 +259,14 @@ export class ParserService {
 
       if (answers.length < 2) return;
 
+      const feedback = this.extractFeedback($, element);
+
       questions.push({
         type: 'multichoice',
         title: `Questão ${qIndex}`,
         statement,
         answers,
+        ...(feedback && { feedback }),
       });
     });
 
@@ -287,5 +372,21 @@ export class ParserService {
       .replace(/[“”"(){}\[\];.,!?]+$/g, '')
       .replace(/[:“”"(){}\[\];.,!?]/g, '')
       .trim();
+  }
+
+  extractFeedback($: CheerioAPI, element): string | null {
+    const feedbackContainer = $(element).find(
+      '.bb-editor.bb-editor[contenteditable="false"]',
+    );
+
+    if (!feedbackContainer.length) return null;
+
+    const paragraphs = feedbackContainer
+      .find('p')
+      .map((_, p) => $(p).text().trim())
+      .get();
+    const feedback = paragraphs.filter(Boolean).join('\n').trim();
+
+    return feedback || null;
   }
 }

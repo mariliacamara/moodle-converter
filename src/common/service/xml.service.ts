@@ -10,6 +10,7 @@ interface Question {
   title: string;
   statement: string;
   answers?: Answer[];
+  feedback?: string;
 }
 @Injectable()
 export class XMLService {
@@ -84,6 +85,13 @@ export class XMLService {
             });
             ans.ele('text').dat(a.text);
           }
+        }
+
+        if (q.feedback) {
+          qNode
+            .ele('generalfeedback', { format: 'html' })
+            .ele('text')
+            .dat(q.feedback);
         }
       }
     }
