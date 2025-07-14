@@ -87,18 +87,18 @@ export class QuestionsService {
     const matchedKeys = new Set<string>();
 
     const getNormalizedCorrectAlternative = (q: any): string =>
-      this.parserService.normalize(
+      this.parserService.normalizeText(
         q.answers.find((a: any) => a.correct)?.text || '',
       );
 
     for (const htmlQ of htmlQuestions) {
-      const normalizedHTML = this.parserService.normalize(htmlQ.statement);
+      const normalizedHTML = this.parserService.normalizeText(htmlQ.statement);
       const htmlCorrect = getNormalizedCorrectAlternative(htmlQ);
 
       let found: any = null;
 
       for (const xmlQ of xmlQuestions) {
-        const normXml = this.parserService.normalize(xmlQ.statement);
+        const normXml = this.parserService.normalizeText(xmlQ.statement);
         const xmlCorrect = getNormalizedCorrectAlternative(xmlQ);
 
         if (normXml === normalizedHTML && xmlCorrect === htmlCorrect) {

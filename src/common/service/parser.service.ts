@@ -3,11 +3,7 @@ import { Injectable } from '@nestjs/common';
 import * as cheerio from 'cheerio';
 import { CheerioAPI } from 'cheerio';
 import { parseStringPromise } from 'xml2js';
-
-interface Answer {
-  text: string;
-  correct: boolean;
-}
+import { Answer } from '../interfaces/answer.interface';
 
 type Question =
   | {
@@ -25,57 +21,12 @@ type Question =
 
 @Injectable()
 export class ParserService {
-  parseQuestions(text: string, startIndex: number = 1): Question[] {
-    const questions: Question[] = [];
-
-    const blocks = text.split(/\|\s*M[úu]ltipla escolha\s*--\s*pontos/);
-
-    for (let i = 1; i < blocks.length; i++) {
-      const raw = blocks[i]
-        .replace(/\n+/g, '\n')
-        .replace(/\s+/g, ' ')
-        .replace(/\s*Comentários automatizados.*/gi, '')
-        .trim();
-
-      const match = raw.match(/^(.*?)(?=\n?[A-D](?:\s|\n|Resposta))/);
-      if (!match) continue;
-
-      const statement = match[1].trim();
-      const alternativesText = raw.substring(match[0].length).trim();
-
-      const answerRegex =
-        /([A-D])\s*(Resposta correta)?\s*([\s\S]*?)(?=(?:\n?[A-D]\s|$))/g;
-      const answers: Answer[] = [];
-      let m;
-      while ((m = answerRegex.exec(alternativesText)) !== null) {
-        const [, , correctTag, body] = m;
-        const cleaned = body.replace(/Resposta correta/gi, '').trim();
-        if (!cleaned) continue;
-        answers.push({
-          text: cleaned,
-          correct: !!correctTag,
-        });
-      }
-
-      if (answers.length < 2) continue;
-
-      questions.push({
-        type: 'multichoice',
-        title: `Questão ${startIndex + questions.length}`,
-        statement,
-        answers,
-      });
-    }
-
-    return questions;
-  }
-
   async parseQuestionsFromXML(xml: string): Promise<Question[]> {
     const parsed = await parseStringPromise(xml);
     const questions: Question[] = [];
 
     for (const q of parsed.quiz.question || []) {
-      const statement = q.questiontext?.[0]?.text?.[0]?.trim();
+      const statement = q.questiontext?.[0]?.text?.[0]?.trim() || '';
 
       const answers: Answer[] = [];
       for (const a of q.answer || []) {
@@ -107,89 +58,54 @@ export class ParserService {
     return questions;
   }
 
-  // parseQuestionsFromHTML(html: string, startIndex = 1): Question[] {
-  //   const $ = cheerio.load(html);
-  //   const questions: Question[] = [];
+  parseQuestions(text: string, startIndex: number = 1): Question[] {
+    const questions: Question[] = [];
 
-  //   $('.question-container').each((index, element) => {
-  //     const qIndex = startIndex + index;
-  //     const $el = $(element);
+    const blocks = text.split(/\|\s*M[úu]ltipla escolha\s*--\s*pontos/);
 
-  //     const statement = $el.find('.question-text .ql-editor').text().trim();
+    for (let i = 1; i < blocks.length; i++) {
+      const raw = blocks[i]
+        .replace(/\n+/g, '\n')
+        .replace(/\s+/g, ' ')
+        .replace(/\s*Comentários automatizados.*/gi, '')
+        .trim();
 
-  //     const isEssay = $el.find('.essay').length > 0;
+      const match = raw.match(/^(.*?)(?=\n?[A-D](?:\s|\n|Resposta))/);
+      if (!match) continue;
 
-  //     if (isEssay) {
-  //       questions.push({
-  //         type: 'essay',
-  //         title: `Questão ${qIndex}`,
-  //         statement,
-  //       });
-  //       return;
-  //     }
+      const rawStatement = match[1].trim();
+      const statement = `<p>${rawStatement}</p>`;
 
-  //     const answers: Answer[] = [];
+      const alternativesText = raw.substring(match[0].length).trim();
+      const answerRegex =
+        /([A-D])\s*(Resposta correta)?\s*([\s\S]*?)(?=(?:\n?[A-D]\s|$))/g;
 
-  //     const isTrueFalse = $(element).find('.true-false__list').length > 0;
+      const answers: Answer[] = [];
+      let m;
+      while ((m = answerRegex.exec(alternativesText)) !== null) {
+        const [, , correctTag, body] = m;
+        const cleaned = body.replace(/Resposta correta/gi, '').trim();
+        if (!cleaned) continue;
+        answers.push({
+          text: `<p>${cleaned}</p>`,
+          correct: !!correctTag,
+        });
+      }
 
-  //     if (isTrueFalse) {
-  //       const rawStatement = $(element)
-  //         .find('.question-text .ql-editor')
-  //         .text()
-  //         .trim();
-  //       const answers: Answer[] = [];
+      if (answers.length < 2) continue;
 
-  //       $(element)
-  //         .find('.true-false__list li')
-  //         .each((_, li) => {
-  //           const $li = $(li);
-  //           const text = $li.find('.true-false__text').text().trim();
-  //           const correct = $li.find('.true-false__correct').length > 0;
+      questions.push({
+        type: 'multichoice',
+        title: `Questão ${startIndex + questions.length}`,
+        statement,
+        answers,
+      });
+    }
 
-  //           if (text) {
-  //             answers.push({ text, correct });
-  //           }
-  //         });
+    return questions;
+  }
 
-  //       if (answers.length === 2) {
-  //         questions.push({
-  //           type: 'multichoice',
-  //           title: `Questão ${qIndex}`,
-  //           statement: rawStatement,
-  //           answers,
-  //           isVF: true,
-  //         });
-  //         return;
-  //       }
-  //     }
-
-  //     $el.find('.multiple-answer__dnd-item').each((_, alt) => {
-  //       const text = $(alt).find('.ql-editor.bb-editor').text().trim();
-  //       const correct = $(alt)
-  //         .find('.answer-feedback-container span')
-  //         .text()
-  //         .toLowerCase()
-  //         .includes('resposta correta');
-
-  //       if (text) {
-  //         answers.push({ text, correct });
-  //       }
-  //     });
-
-  //     if (answers.length < 2) return;
-
-  //     questions.push({
-  //       type: 'multichoice',
-  //       title: `Questão ${qIndex}`,
-  //       statement,
-  //       answers,
-  //     });
-  //   });
-
-  //   return questions;
-  // }
-
-  parseQuestionsFromHTML(html: string, startIndex = 1): Question[] {
+  parseQuestionsFromHTML(html: string, startIndex: number = 1): Question[] {
     const $ = cheerio.load(html);
     const questions: (Question & { feedback?: string })[] = [];
 
@@ -197,7 +113,10 @@ export class ParserService {
       const qIndex = startIndex + index;
       const $el = $(element);
 
-      const statement = $el.find('.question-text .ql-editor').text().trim();
+      const statement =
+        $el.find('.question-text .ql-editor').html()?.trim() || '';
+
+      console.log(1, statement);
       const isEssay = $el.find('.essay').length > 0;
 
       if (isEssay) {
@@ -215,14 +134,12 @@ export class ParserService {
       const answers: Answer[] = [];
 
       if (isTrueFalse) {
-        const rawStatement = $el
-          .find('.question-text .ql-editor')
-          .text()
-          .trim();
+        const rawStatement =
+          $el.find('.question-text .ql-editor').html()?.trim() || '';
 
         $el.find('.true-false__list li').each((_, li) => {
           const $li = $(li);
-          const text = $li.find('.true-false__text').text().trim();
+          const text = $li.find('.true-false__text').html()?.trim() || '';
           const correct = $li.find('.true-false__correct').length > 0;
 
           if (text) {
@@ -245,7 +162,7 @@ export class ParserService {
       }
 
       $el.find('.multiple-answer__dnd-item').each((_, alt) => {
-        const text = $(alt).find('.ql-editor.bb-editor').text().trim();
+        const text = $(alt).find('.ql-editor.bb-editor').html()?.trim() || '';
         const correct = $(alt)
           .find('.answer-feedback-container span')
           .text()
@@ -271,6 +188,19 @@ export class ParserService {
     });
 
     return questions;
+  }
+
+  normalizeText(text: string): string {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[\u200B-\u200D\uFEFF\u00a0]/g, '')
+      .replace(/[\s\n\r]+/g, ' ')
+      .replace(/[-–—]/g, '-')
+      .replace(/[“”"(){}\[\];.,!?]+$/g, '')
+      .replace(/[:“”"(){}\[\];.,!?]/g, '')
+      .trim();
   }
 
   extractQuestions(html: string) {
@@ -302,6 +232,16 @@ export class ParserService {
     return questions;
   }
 
+  extractFeedback($: CheerioAPI, element): string | null {
+    const feedbackContainer = $(element).find(
+      '.bb-editor.bb-editor[contenteditable="false"]',
+    );
+
+    if (!feedbackContainer.length) return null;
+
+    return feedbackContainer.html()?.trim() || null;
+  }
+
   compareHtmlAndXml(
     htmlQuestions: Question[],
     xmlQuestions: Question[],
@@ -312,8 +252,8 @@ export class ParserService {
     for (const xmlQ of xmlQuestions) {
       if (xmlQ.type !== 'multichoice') continue;
 
-      const xmlStatement = this.normalize(xmlQ.statement);
-      const xmlCorrect = this.normalize(
+      const xmlStatement = this.normalizeText(xmlQ.statement);
+      const xmlCorrect = this.normalizeText(
         xmlQ.answers.find((a) => a.correct)?.text || '',
       );
       const key = `${xmlStatement}::${xmlCorrect}`;
@@ -322,8 +262,8 @@ export class ParserService {
 
       const matchInHtml = htmlQuestions.some((htmlQ) => {
         if (htmlQ.type !== 'multichoice') return false;
-        const htmlStatement = this.normalize(htmlQ.statement);
-        const htmlCorrect = this.normalize(
+        const htmlStatement = this.normalizeText(htmlQ.statement);
+        const htmlCorrect = this.normalizeText(
           htmlQ.answers.find((a) => a.correct)?.text || '',
         );
 
@@ -345,10 +285,10 @@ export class ParserService {
     const uniqueQuestions: Question[] = [];
 
     for (const q of questions) {
-      const statement = this.normalize(q.statement);
+      const statement = this.normalizeText(q.statement);
       const correctAnswer =
         q.type === 'multichoice'
-          ? this.normalize(q.answers.find((a) => a.correct)?.text || '')
+          ? this.normalizeText(q.answers.find((a) => a.correct)?.text || '')
           : '';
       const key = `${statement}::${correctAnswer}`;
 
@@ -359,34 +299,5 @@ export class ParserService {
     }
 
     return uniqueQuestions;
-  }
-
-  normalize(text: string): string {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[\u200B-\u200D\uFEFF\u00a0]/g, '')
-      .replace(/[\s\n\r]+/g, ' ')
-      .replace(/[-–—]/g, '-')
-      .replace(/[“”"(){}\[\];.,!?]+$/g, '')
-      .replace(/[:“”"(){}\[\];.,!?]/g, '')
-      .trim();
-  }
-
-  extractFeedback($: CheerioAPI, element): string | null {
-    const feedbackContainer = $(element).find(
-      '.bb-editor.bb-editor[contenteditable="false"]',
-    );
-
-    if (!feedbackContainer.length) return null;
-
-    const paragraphs = feedbackContainer
-      .find('p')
-      .map((_, p) => $(p).text().trim())
-      .get();
-    const feedback = paragraphs.filter(Boolean).join('\n').trim();
-
-    return feedback || null;
   }
 }
