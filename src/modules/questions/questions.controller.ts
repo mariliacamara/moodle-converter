@@ -69,9 +69,11 @@ export class QuestionsController {
   ) {
     const xmlBuffer =
       await this.questionsService.convertMultiplePDFsToXML(files);
+
+    const nameWithoutExt = files[0].originalname.replace(/\.[^/.]+$/, '');
     res.set({
       'Content-Type': 'application/xml',
-      'Content-Disposition': 'attachment; filename=all_questions.xml',
+      'Content-Disposition': `attachment; filename=${nameWithoutExt}.xml`,
     });
     res.send(xmlBuffer);
   }
