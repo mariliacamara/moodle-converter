@@ -29,4 +29,6 @@ COPY --from=builder /app/package-lock.json .
 COPY --from=builder /app/.prisma ./node_modules/.prisma
 COPY --from=builder /app/static ./static
 
-CMD ["node", "dist/main.js"]
+EXPOSE 8080
+
+CMD ["sh", "-c", "PORT=${PORT:-8080} node dist/main.js"]
