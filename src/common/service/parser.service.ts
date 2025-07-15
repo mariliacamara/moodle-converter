@@ -119,7 +119,7 @@ export class ParserService {
       const isEssay = $el.find('.essay').length > 0;
 
       if (isEssay) {
-        const feedback = this.extractFeedback($, element);
+        const { feedback } = this.extractFeedback($, element);
         questions.push({
           type: 'essay',
           title: `Questão ${qIndex}`,
@@ -147,7 +147,7 @@ export class ParserService {
         });
 
         if (answers.length === 2) {
-          const feedback = this.extractFeedback($, element);
+          const { feedback } = this.extractFeedback($, element);
           questions.push({
             type: 'multichoice',
             title: `Questão ${qIndex}`,
@@ -175,7 +175,7 @@ export class ParserService {
 
       if (answers.length < 2) return;
 
-      const feedback = this.extractFeedback($, element);
+      const { feedback } = this.extractFeedback($, element);
 
       questions.push({
         type: 'multichoice',
@@ -231,14 +231,40 @@ export class ParserService {
     return questions;
   }
 
-  extractFeedback($: CheerioAPI, element): string | null {
-    const feedbackContainer = $(element).find(
-      '.bb-editor.bb-editor[contenteditable="false"]',
-    );
+  extractFeedback(
+    $: CheerioAPI,
+    element,
+  ): {
+    questionId: string | null;
+    feedback: string | null;
+  } {
+    const label = $(element)
+      .find('label')
+      .filter((_, el) =>
+        $(el).text().toUpperCase().includes('COMENTÁRIOS DE RESPOSTA CORRETA'),
+      );
 
-    if (!feedbackContainer.length) return null;
+    if (!label.length) return { questionId: null, feedback: null };
 
-    return feedbackContainer.html()?.trim() || null;
+    const feedbackId = label.attr('for');
+    if (!feedbackId) return { questionId: null, feedback: null };
+
+    const match = feedbackId.match(/feedback_(\d+)_\d+$/);
+    const questionId = match ? match[1] : null;
+
+    const feedbackContainer = $(element).find(`#${feedbackId}`);
+    const feedback = feedbackContainer
+      .find('p')
+      .map((_, p) => $(p).text().trim())
+      .get()
+      .filter(Boolean)
+      .join('\n')
+      .trim();
+
+    return {
+      questionId,
+      feedback: feedback || null,
+    };
   }
 
   compareHtmlAndXml(
