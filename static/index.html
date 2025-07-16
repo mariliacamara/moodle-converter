@@ -37,8 +37,7 @@
 
       <p class="mb-4">Selecione um arquivo HTML para gerar suas questões em XML:</p>
 
-      <form id="uploadForm" action="/questions/upload-multiple" method="POST" enctype="multipart/form-data"
-        class="bg-white shadow-md rounded-lg p-6 space-y-4">
+      <form id="uploadForm" class="bg-white shadow-md rounded-lg p-6 space-y-4">
         
         <div id="fileInputs" class="flex flex-col gap-6 transition-all duration-300">
           <div class="flex items-center gap-4" data-index="1">
@@ -221,6 +220,42 @@
       // Resetar contador
       fileCount = 1;
     }
+
+    document.getElementById('uploadForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const formData = new FormData(form);
+
+      try {
+        const response = await fetch('/questions/upload-multiple', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          alert('Erro ao gerar XML');
+          return;
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        const disposition = response.headers.get('Content-Disposition');
+        const match = disposition?.match(/filename=(.+)/);
+        const filename = match ? match[1] : 'arquivo.xml';
+
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (err) {
+        alert('Erro: ' + err.message);
+      }
+    });
 
     document.getElementById('compareForm').addEventListener('submit', async function (e) {
       e.preventDefault();
