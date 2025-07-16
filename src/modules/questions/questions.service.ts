@@ -138,4 +138,15 @@ export class QuestionsService {
       notFound,
     };
   }
+
+  sanitizeFilename(filename: string): string {
+    return filename
+      .normalize('NFD') // separa acentos de letras
+      .replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/\.[^/.]+$/, '') // remove a extensão
+      .replace(/[^\w\d_-]+/g, '_') // troca tudo que não é alfanumérico por _
+      .replace(/_+/g, '_') // remove múltiplos _
+      .replace(/^_+|_+$/g, '') // remove _ no começo/fim
+      .substring(0, 64); // evita nomes longos
+  }
 }

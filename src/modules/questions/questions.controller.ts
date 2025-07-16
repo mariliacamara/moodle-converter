@@ -67,27 +67,24 @@ export class QuestionsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Res() res: Response,
   ) {
-    console.log('🔄 [Upload Multiple] Iniciando');
-
     try {
       if (!files || files.length === 0) {
         console.warn('Nenhum arquivo recebido.');
         return res.status(400).json({ message: 'Nenhum arquivo enviado' });
       }
 
-      console.log(`[UPLOAD] Iniciando conversão de ${files.length} arquivo(s)`);
-
       const xmlBuffer =
         await this.questionsService.convertMultiplePDFsToXML(files);
 
-      const nameWithoutExt = files[0].originalname.replace(/\.[^/.]+$/, '');
+      const filename = this.questionsService.sanitizeFilename(
+        files[0].originalname,
+      );
 
       res.set({
         'Content-Type': 'application/xml',
-        'Content-Disposition': `attachment; filename=${nameWithoutExt}.xml`,
+        'Content-Disposition': `attachment; filename=${filename}.xml`,
       });
 
-      console.log(`[UPLOAD] Enviando XML gerado para: ${nameWithoutExt}.xml`);
       res.send(xmlBuffer);
     } catch (error) {
       console.error('[UPLOAD] Erro ao gerar XML:', error);
