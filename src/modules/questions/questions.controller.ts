@@ -67,6 +67,8 @@ export class QuestionsController {
     @UploadedFiles() files: Express.Multer.File[],
     @Res() res: Response,
   ) {
+    console.log('🔄 [Upload Multiple] Iniciando');
+
     try {
       if (!files || files.length === 0) {
         console.warn('Nenhum arquivo recebido.');
