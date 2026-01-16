@@ -52,7 +52,7 @@
     "json2csv": "^6.0.0-alpha.2",
     "lodash": "^4.17.21",
     "lodash.chunk": "^4.2.0",
-    "multer": "^2.0.1",
+    "multer": "^2.0.2",
     "nodemailer": "^7.0.3",
     "nodemailer-express-handlebars": "^7.0.0",
     "openai": "^4.103.0",
